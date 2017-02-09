@@ -5,4 +5,5 @@ I haven't taken the time to fiddle with(learn) python but the only examples of c
 
 Based on and many thanks to:
 https://github.com/softScheck/tplink-smartplug
+
 https://github.com/GadgetReactor/pyHS100
