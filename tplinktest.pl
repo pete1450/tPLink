@@ -5,50 +5,112 @@ use bytes;
 use JSON qw( decode_json );
 
 my $reply;
-my $debug = 0;
+my $debug = 1;
 
 #my $ip = '192.168.1.165';
-my $ip = '192.168.1.129';
+#my $ip = '192.168.1.129';
+my $ip = '192.168.1.194';
 
-#get all the info
-#printBulbInfo($ip);
-
-#turn a light on
-$reply = set_bulb_status($ip, 1);
-print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
-
-#turn a light off
-$reply = set_bulb_status($ip, 0);
-print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
+executeAllBulbCommandsTest($ip);
 
 
-
-
-
-#
+###
 #
 #Subroutines
 #
-#
+###
+
+##
+#General commands
+##
 
 #returns decoded json
-sub get_info{
+sub get_sysinfo{
 	my $ip = shift;
 	my $command = '{"system":{"get_sysinfo":{}}}';
 	my $return = sendcmd($ip, "$command");
 	return $return;
 }
 
+sub identify{
+	my $ip = shift;
+	my $command = '{"system":{"get_sysinfo":{}}}';
+	my $return = sendcmd($ip, "$command");
+	print "model: " . $return->{'system'}{'get_sysinfo'}{'model'} . "\n" if $debug;
+	print "alias: " . $return->{'system'}{'get_sysinfo'}{'alias'} . "\n" if $debug;
+	return $return;
+}
+
+sub set_alias{
+	my $ip = shift;
+	my $alias = shift;
+	my $command = '{"system":{"set_dev_alias":{"alias":"' . $alias . '"}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+sub get_emeter_realtime{
+	my $ip = shift;
+	my $command = '{"smartlife.iot.common.emeter":{"get_realtime":{}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+sub get_emeter_daily{
+	my $ip = shift;
+	my $command = '{"smartlife.iot.common.emeter":{"get_daystat":{"month":1,"year":2017}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+sub get_emeter_monthly{
+	my $ip = shift;
+	my $command = '{"smartlife.iot.common.emeter":{"get_monthstat":{"year":2017}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+sub erase_emeter_stats{
+	my $ip = shift;
+	my $command = '{"smartlife.iot.common.emeter":{"erase_emeter_stat":{}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+
+##
+#Bulb Related commands
+##
+
 #1 = on
 #0 = off
 #returns decoded json
-sub set_bulb_status{
+sub set_bulb_state{
 	my $ip = shift;
 	my $status = shift;
 	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $status . '}}}';
 	my $return = sendcmd($ip, "$command");
 	return $return;
 }
+
+sub get_bulb_state{
+	my $ip = shift;
+	my $status = shift;
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"get_light_state":{}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+#only works if bulb is on
+sub set_color_temp{
+	my $ip = shift;
+	my $temp = shift;
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"color_temp":' . $temp . '}}}';
+	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+
 
 #returns decoded json
 sub sendcmd{
@@ -105,7 +167,7 @@ sub decrypt{
 
 sub printBulbInfo{
 	my $ip = shift;
-	my $returned = get_info($ip);
+	my $returned = get_sysinfo($ip);
 	print "sw_ver: " . $returned->{'system'}{'get_sysinfo'}{'sw_ver'} . "\n";
 	print "hw_ver: " . $returned->{'system'}{'get_sysinfo'}{'hw_ver'} . "\n";
 	print "model: " . $returned->{'system'}{'get_sysinfo'}{'model'} . "\n";
@@ -122,11 +184,11 @@ sub printBulbInfo{
 	print "ctrl_protocols->name: " . $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'name'} . "\n";
 	print "ctrl_protocols->version: " . $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'version'} . "\n";
 	print "light_state->on_off: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'on_off'} . "\n";
-	print "light_state->dft_on_state->mode: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'dft_on_state'}{'mode'} . "\n";
-	print "light_state->dft_on_state->hue: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'dft_on_state'}{'hue'} . "\n";
-	print "light_state->dft_on_state->saturation: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'dft_on_state'}{'saturation'} . "\n";
-	print "light_state->dft_on_state->color_temp: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'dft_on_state'}{'color_temp'} . "\n";
-	print "light_state->dft_on_state->brightness: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'dft_on_state'}{'brightness'} . "\n";
+	print "light_state->mode: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'mode'} . "\n";
+	print "light_state->hue: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'hue'} . "\n";
+	print "light_state->saturation: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'saturation'} . "\n";
+	print "light_state->color_temp: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'color_temp'} . "\n";
+	print "light_state->brightness: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'brightness'} . "\n";
 	print "is_dimmable: " . $returned->{'system'}{'get_sysinfo'}{'is_dimmable'} . "\n";
 	print "is_color: " . $returned->{'system'}{'get_sysinfo'}{'is_color'} . "\n";
 	print "is_variable_color_temp: " . $returned->{'system'}{'get_sysinfo'}{'is_variable_color_temp'} . "\n";
@@ -150,6 +212,43 @@ sub printBulbInfo{
 	print "active_mode: " . $returned->{'system'}{'get_sysinfo'}{'active_mode'} . "\n";
 	print "heapsize: " . $returned->{'system'}{'get_sysinfo'}{'heapsize'} . "\n";
 	print "err_code: " . $returned->{'system'}{'get_sysinfo'}{'err_code'} . "\n";
+}
+
+sub executeAllBulbCommandsTest{
+
+	my $ip = shift;
+
+	#get all the info
+	printBulbInfo($ip);
+
+	#turn a light on
+	$reply = set_bulb_state($ip, 1);
+	print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
+	#sleep(2);
+	#turn a light off
+	#$reply = set_bulb_state($ip, 0);
+	print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
+
+	$reply = identify($ip);
+	print "model:" . $reply->{'system'}{'get_sysinfo'}{'model'} . " alias:" . $reply->{'system'}{'get_sysinfo'}{'alias'} .  "\n";
+
+	##not working
+	#$reply = set_alias($ip, "test");
+	#$reply = set_alias($ip, "Upstairs Lamp");
+
+	## these have long responses and break something
+	#get_emeter_daily($ip);
+	#get_emeter_monthly($ip);
+
+	get_emeter_realtime($ip);
+
+	#commented out as to be nondestructive
+	#erase_emeter_stats($ip);
+
+	get_bulb_state($ip);
+
+	set_color_temp($ip, 2500);
+
 }
 
 
