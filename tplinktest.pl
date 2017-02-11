@@ -11,8 +11,8 @@ my $debug = 1;
 #my $ip = '192.168.1.129';
 my $ip = '192.168.1.194';
 
-#executeAllBulbCommandsTest($ip);
-set_hsv($ip, 0, 50, 50);
+executeAllBulbCommandsTest($ip);
+
 
 
 ###
@@ -169,6 +169,16 @@ sub set_white_temp{
 	return $reply;
 }
 
+#returns hash of state info
+sub get_color_temp{
+	my $ip = shift;
+	my $status = shift;
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"get_light_state":{}}}';
+	my $return = sendcmd($ip, "$command");
+	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'color_temp'};
+	return $reply;
+}
+
 #HSV- h values 0-255, other 0-100 #imnocolorexpert so  #thismaybeincorrect
 #returns hash of hsv
 sub get_hsv{
@@ -187,15 +197,37 @@ sub set_hsv{
 	my $h = shift;
 	my $s = shift;
 	my $v = shift;
-	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"hue":' . $h . ',"saturation":' . $s . ',"brightness":' . $v . '}}}';
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"hue":' . $h . ',"saturation":' . $s . ',"brightness":' . $v . ',"color_temp":0}}}';
 	my $return = sendcmd($ip, "$command");
 	my %reply;
 	$reply{'hue'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'hue'};
 	$reply{'saturation'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'saturation'};
 	$reply{'value'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'brightness'};
 	return %reply;
+}
 
+sub set_bulb_red{
+	my $ip = shift;
+	set_hsv($ip, 0, 100, 100);
+}
 
+sub set_bulb_green{
+	my $ip = shift;
+	set_hsv($ip, 120, 100, 100);
+}
+
+sub set_bulb_blue{
+	my $ip = shift;
+	set_hsv($ip, 200, 100, 100);
+}
+
+sub set_brightness{
+	my $ip = shift;
+	my $brightness = shift;
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"brightness":' . $brightness . '}}}';
+	my $return = sendcmd($ip, "$command");
+	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'brightness'};
+	return $reply;
 }
 
 
@@ -332,7 +364,24 @@ sub executeAllBulbCommandsTest{
 	print "New HSV-----\n";
 	print "\n";
 
+	$return = get_color_temp($ip);
+	print "Color temp: $return";
 	
+	
+	set_bulb_red($ip);
+	sleep(1);
+	set_bulb_green($ip);
+	sleep(1);
+	set_bulb_blue($ip);
+	sleep(1);
+	
+	set_brightness($ip, 50);
+	sleep(1);
+	$return = set_brightness($ip, 10);
+	print "New brightness: $return\n";
+	sleep(1);
+	set_brightness($ip, 100);
+	sleep(1);
 
 }
 
