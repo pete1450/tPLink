@@ -11,7 +11,8 @@ my $debug = 1;
 #my $ip = '192.168.1.129';
 my $ip = '192.168.1.194';
 
-executeAllBulbCommandsTest($ip);
+#executeAllBulbCommandsTest($ip);
+set_hsv($ip, 0, 50, 50);
 
 
 ###
@@ -27,18 +28,66 @@ executeAllBulbCommandsTest($ip);
 #returns decoded json
 sub get_sysinfo{
 	my $ip = shift;
+	my %returnHash;
 	my $command = '{"system":{"get_sysinfo":{}}}';
-	my $return = sendcmd($ip, "$command");
-	return $return;
+	my $returned = sendcmd($ip, "$command");
+	$returnHash{'sw_ver'} = $returned->{'system'}{'get_sysinfo'}{'sw_ver'};
+	$returnHash{'hw_ver'} = $returned->{'system'}{'get_sysinfo'}{'hw_ver'};
+	$returnHash{'model'} = $returned->{'system'}{'get_sysinfo'}{'model'};
+	$returnHash{'alias'} = $returned->{'system'}{'get_sysinfo'}{'alias'};
+	$returnHash{'description'} = $returned->{'system'}{'get_sysinfo'}{'description'};
+	$returnHash{'mic_type'} = $returned->{'system'}{'get_sysinfo'}{'mic_type'};
+	$returnHash{'dev_state'} = $returned->{'system'}{'get_sysinfo'}{'dev_state'};
+	$returnHash{'mic_mac'} = $returned->{'system'}{'get_sysinfo'}{'mic_mac'};
+	$returnHash{'deviceId'} = $returned->{'system'}{'get_sysinfo'}{'deviceId'};
+	$returnHash{'oemId'} = $returned->{'system'}{'get_sysinfo'}{'oemId'};
+	$returnHash{'hwId'} = $returned->{'system'}{'get_sysinfo'}{'hwId'};
+	$returnHash{'is_factory'} = $returned->{'system'}{'get_sysinfo'}{'is_factory'};
+	$returnHash{'disco_ver'} = $returned->{'system'}{'get_sysinfo'}{'disco_ver'};
+	$returnHash{'ctrl_protocols_name'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'name'};
+	$returnHash{'ctrl_protocols_version'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'version'};
+	$returnHash{'light_state_on_off'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'on_off'};
+	$returnHash{'light_state_mode'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'mode'};
+	$returnHash{'light_state_hue'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'hue'};
+	$returnHash{'light_state_saturation'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'saturation'};
+	$returnHash{'light_state_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'color_temp'};
+	$returnHash{'light_state_brightness'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'brightness'};
+	$returnHash{'is_dimmable'} = $returned->{'system'}{'get_sysinfo'}{'is_dimmable'};
+	$returnHash{'is_color'} = $returned->{'system'}{'get_sysinfo'}{'is_color'};
+	$returnHash{'is_variable_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'is_variable_color_temp'};
+
+	### Seems like there's a better way to do this... don't care for now
+	# print "preferred_state->\n";
+	# my @prefArr = @{$returned->{'system'}{'get_sysinfo'}{'preferred_state'}};
+	# foreach(@prefArr)
+	# {
+		# my %tmphash = %{$_};
+		# print "\t";
+		# $returnHash("preferred_state_index"} = $tmphash{index};
+		# $returnHash("preferred_state_hue"} = $tmphash{hue};
+		# $returnHash("preferred_state_saturation"} = $tmphash{saturation};
+		# $returnHash("preferred_state_color_temp"} = $tmphash{color_temp};
+		# $returnHash("preferred_state_brightness"} = $tmphash{brightness};
+		# print "\n";
+	# }
+
+	$returnHash{'rssi'} = $returned->{'system'}{'get_sysinfo'}{'rssi'};
+	$returnHash{'active_mode'} = $returned->{'system'}{'get_sysinfo'}{'active_mode'};
+	$returnHash{'heapsize'} = $returned->{'system'}{'get_sysinfo'}{'heapsize'};
+	$returnHash{'err_code'} = $returned->{'system'}{'get_sysinfo'}{'err_code'};
+	return %returnHash;
 }
 
 sub identify{
 	my $ip = shift;
 	my $command = '{"system":{"get_sysinfo":{}}}';
 	my $return = sendcmd($ip, "$command");
+	my %returnHash;
 	print "model: " . $return->{'system'}{'get_sysinfo'}{'model'} . "\n" if $debug;
 	print "alias: " . $return->{'system'}{'get_sysinfo'}{'alias'} . "\n" if $debug;
-	return $return;
+	$returnHash{"model"} = $return->{'system'}{'get_sysinfo'}{'model'};
+	$returnHash{"alias"} = $return->{'system'}{'get_sysinfo'}{'alias'};
+	return %returnHash;
 }
 
 sub set_alias{
@@ -84,31 +133,74 @@ sub erase_emeter_stats{
 
 #1 = on
 #0 = off
-#returns decoded json
+#returns new status of light
 sub set_bulb_state{
 	my $ip = shift;
 	my $status = shift;
 	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $status . '}}}';
 	my $return = sendcmd($ip, "$command");
-	return $return;
+	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'};
+	return $reply;
 }
 
+#returns hash of state info
 sub get_bulb_state{
 	my $ip = shift;
 	my $status = shift;
 	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"get_light_state":{}}}';
 	my $return = sendcmd($ip, "$command");
-	return $return;
+	my %reply;
+	$reply{'on_off'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'on_off'};
+	$reply{'mode'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'mode'};
+	$reply{'hue'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'hue'};
+	$reply{'saturation'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'saturation'};
+	$reply{'color_temp'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'color_temp'};
+	$reply{'brightness'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'get_light_state'}{'brightness'};
+	return %reply;
 }
 
 #only works if bulb is on
-sub set_color_temp{
+sub set_white_temp{
 	my $ip = shift;
 	my $temp = shift;
 	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"color_temp":' . $temp . '}}}';
 	my $return = sendcmd($ip, "$command");
-	return $return;
+	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'color_temp'};
+	return $reply;
 }
+
+#HSV- h values 0-255, other 0-100 #imnocolorexpert so  #thismaybeincorrect
+#returns hash of hsv
+sub get_hsv{
+	my $ip = shift;
+	my %reply = get_bulb_state($ip);
+	my %return;
+	$return{'hue'} = $reply{'hue'};
+	$return{'saturation'} = $reply{'saturation'};
+	$return{'value'} = $reply{'brightness'}* 255 / 100;
+	return %return;
+}
+
+
+sub set_hsv{
+	my $ip = shift;
+	my $h = shift;
+	my $s = shift;
+	my $v = shift;
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"hue":' . $h . ',"saturation":' . $s . ',"brightness":' . $v . '}}}';
+	my $return = sendcmd($ip, "$command");
+	my %reply;
+	$reply{'hue'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'hue'};
+	$reply{'saturation'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'saturation'};
+	$reply{'value'} = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'brightness'};
+	return %reply;
+
+
+}
+
+
+
+
 
 
 
@@ -167,70 +259,37 @@ sub decrypt{
 
 sub printBulbInfo{
 	my $ip = shift;
-	my $returned = get_sysinfo($ip);
-	print "sw_ver: " . $returned->{'system'}{'get_sysinfo'}{'sw_ver'} . "\n";
-	print "hw_ver: " . $returned->{'system'}{'get_sysinfo'}{'hw_ver'} . "\n";
-	print "model: " . $returned->{'system'}{'get_sysinfo'}{'model'} . "\n";
-	print "alias: " . $returned->{'system'}{'get_sysinfo'}{'alias'} . "\n";
-	print "description: " . $returned->{'system'}{'get_sysinfo'}{'description'} . "\n";
-	print "mic_type: " . $returned->{'system'}{'get_sysinfo'}{'mic_type'} . "\n";
-	print "dev_state: " . $returned->{'system'}{'get_sysinfo'}{'dev_state'} . "\n";
-	print "mic_mac: " . $returned->{'system'}{'get_sysinfo'}{'mic_mac'} . "\n";
-	print "deviceId: " . $returned->{'system'}{'get_sysinfo'}{'deviceId'} . "\n";
-	print "oemId: " . $returned->{'system'}{'get_sysinfo'}{'oemId'} . "\n";
-	print "hwId: " . $returned->{'system'}{'get_sysinfo'}{'hwId'} . "\n";
-	print "is_factory: " . $returned->{'system'}{'get_sysinfo'}{'is_factory'} . "\n";
-	print "disco_ver: " . $returned->{'system'}{'get_sysinfo'}{'disco_ver'} . "\n";
-	print "ctrl_protocols->name: " . $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'name'} . "\n";
-	print "ctrl_protocols->version: " . $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'version'} . "\n";
-	print "light_state->on_off: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'on_off'} . "\n";
-	print "light_state->mode: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'mode'} . "\n";
-	print "light_state->hue: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'hue'} . "\n";
-	print "light_state->saturation: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'saturation'} . "\n";
-	print "light_state->color_temp: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'color_temp'} . "\n";
-	print "light_state->brightness: " . $returned->{'system'}{'get_sysinfo'}{'light_state'}{'brightness'} . "\n";
-	print "is_dimmable: " . $returned->{'system'}{'get_sysinfo'}{'is_dimmable'} . "\n";
-	print "is_color: " . $returned->{'system'}{'get_sysinfo'}{'is_color'} . "\n";
-	print "is_variable_color_temp: " . $returned->{'system'}{'get_sysinfo'}{'is_variable_color_temp'} . "\n";
-
-	### Seems like there's a better way to do this...
-	print "preferred_state->\n";
-	my @prefArr = @{$returned->{'system'}{'get_sysinfo'}{'preferred_state'}};
-	foreach(@prefArr)
-	{
-		my %tmphash = %{$_};
-		print "\t";
-		print "index:$tmphash{index}, ";
-		print "hue:$tmphash{hue}, ";
-		print "saturation:$tmphash{saturation}, ";
-		print "color_temp:$tmphash{color_temp}, ";
-		print "brightness:$tmphash{brightness}, ";
-		print "\n";
+	my %returnHash = get_sysinfo($ip);
+	foreach (sort keys %returnHash) {
+		print "$_ : $returnHash{$_}\n";
 	}
 
-	print "rssi: " . $returned->{'system'}{'get_sysinfo'}{'rssi'} . "\n";
-	print "active_mode: " . $returned->{'system'}{'get_sysinfo'}{'active_mode'} . "\n";
-	print "heapsize: " . $returned->{'system'}{'get_sysinfo'}{'heapsize'} . "\n";
-	print "err_code: " . $returned->{'system'}{'get_sysinfo'}{'err_code'} . "\n";
 }
 
 sub executeAllBulbCommandsTest{
 
 	my $ip = shift;
+	my %returnHash;
+	my $return;
 
-	#get all the info
+	#print all the info
 	printBulbInfo($ip);
 
+	#get all the info
+	%returnHash = get_sysinfo($ip);
+
 	#turn a light on
-	$reply = set_bulb_state($ip, 1);
-	print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
+	$return = set_bulb_state($ip, 1);
+	print "New status: " . $return . "\n";
 	#sleep(2);
 	#turn a light off
-	#$reply = set_bulb_state($ip, 0);
-	print "Reply: " . $reply->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'} . "\n";
+	#$return = set_bulb_state($ip, 0);
+	print "New status: " . $return . "\n";
+	print "\n";
 
-	$reply = identify($ip);
-	print "model:" . $reply->{'system'}{'get_sysinfo'}{'model'} . " alias:" . $reply->{'system'}{'get_sysinfo'}{'alias'} .  "\n";
+	my %returnHash = identify($ip);
+	print "model:" . $returnHash{'model'} . " alias:" . $returnHash{'alias'} .  "\n";
+	print "\n";
 
 	##not working
 	#$reply = set_alias($ip, "test");
@@ -245,9 +304,35 @@ sub executeAllBulbCommandsTest{
 	#commented out as to be nondestructive
 	#erase_emeter_stats($ip);
 
-	get_bulb_state($ip);
+	%returnHash = get_bulb_state($ip);
+	print "Bulb State-----\n";
+	foreach (sort keys %returnHash) {
+		print "$_: $returnHash{$_}\n";
+	}
+	print "End bulb State-----\n";
+	print "\n";
 
-	set_color_temp($ip, 2500);
+	my $return = set_white_temp($ip, 2500);
+	print "New white temp: $return\n";
+	print "\n";
+	
+	%returnHash = get_hsv($ip);
+	print "HSV-----\n";
+	foreach (sort keys %returnHash) {
+		print "$_: $returnHash{$_}\n";
+	}
+	print "HSV-----\n";
+	print "\n";
+	
+	%returnHash = set_hsv($ip, 240, 100, 100);
+	print "New HSV-----\n";
+	foreach (sort keys %returnHash) {
+		print "$_: $returnHash{$_}\n";
+	}
+	print "New HSV-----\n";
+	print "\n";
+
+	
 
 }
 
