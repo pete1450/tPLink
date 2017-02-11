@@ -3,15 +3,20 @@ use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
 use Getopt::ArgParse;
 use bytes;
 use JSON qw( decode_json );
+use DateTime;
 
 my $reply;
 my $debug = 1;
 
-#my $ip = '192.168.1.165';
+my $plugip = '192.168.1.165';
 #my $ip = '192.168.1.129';
-my $ip = '192.168.1.194';
+my $bulbip = '192.168.1.194';
 
-executeAllBulbCommandsTest($ip);
+
+
+executeAllPlugCommandsTest($plugip);
+
+#executeAllBulbCommandsTest($bulbip);
 
 
 
@@ -25,58 +30,6 @@ executeAllBulbCommandsTest($ip);
 #General commands
 ##
 
-#returns decoded json
-sub get_sysinfo{
-	my $ip = shift;
-	my %returnHash;
-	my $command = '{"system":{"get_sysinfo":{}}}';
-	my $returned = sendcmd($ip, "$command");
-	$returnHash{'sw_ver'} = $returned->{'system'}{'get_sysinfo'}{'sw_ver'};
-	$returnHash{'hw_ver'} = $returned->{'system'}{'get_sysinfo'}{'hw_ver'};
-	$returnHash{'model'} = $returned->{'system'}{'get_sysinfo'}{'model'};
-	$returnHash{'alias'} = $returned->{'system'}{'get_sysinfo'}{'alias'};
-	$returnHash{'description'} = $returned->{'system'}{'get_sysinfo'}{'description'};
-	$returnHash{'mic_type'} = $returned->{'system'}{'get_sysinfo'}{'mic_type'};
-	$returnHash{'dev_state'} = $returned->{'system'}{'get_sysinfo'}{'dev_state'};
-	$returnHash{'mic_mac'} = $returned->{'system'}{'get_sysinfo'}{'mic_mac'};
-	$returnHash{'deviceId'} = $returned->{'system'}{'get_sysinfo'}{'deviceId'};
-	$returnHash{'oemId'} = $returned->{'system'}{'get_sysinfo'}{'oemId'};
-	$returnHash{'hwId'} = $returned->{'system'}{'get_sysinfo'}{'hwId'};
-	$returnHash{'is_factory'} = $returned->{'system'}{'get_sysinfo'}{'is_factory'};
-	$returnHash{'disco_ver'} = $returned->{'system'}{'get_sysinfo'}{'disco_ver'};
-	$returnHash{'ctrl_protocols_name'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'name'};
-	$returnHash{'ctrl_protocols_version'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'version'};
-	$returnHash{'light_state_on_off'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'on_off'};
-	$returnHash{'light_state_mode'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'mode'};
-	$returnHash{'light_state_hue'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'hue'};
-	$returnHash{'light_state_saturation'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'saturation'};
-	$returnHash{'light_state_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'color_temp'};
-	$returnHash{'light_state_brightness'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'brightness'};
-	$returnHash{'is_dimmable'} = $returned->{'system'}{'get_sysinfo'}{'is_dimmable'};
-	$returnHash{'is_color'} = $returned->{'system'}{'get_sysinfo'}{'is_color'};
-	$returnHash{'is_variable_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'is_variable_color_temp'};
-
-	### Seems like there's a better way to do this... don't care for now
-	# print "preferred_state->\n";
-	# my @prefArr = @{$returned->{'system'}{'get_sysinfo'}{'preferred_state'}};
-	# foreach(@prefArr)
-	# {
-		# my %tmphash = %{$_};
-		# print "\t";
-		# $returnHash("preferred_state_index"} = $tmphash{index};
-		# $returnHash("preferred_state_hue"} = $tmphash{hue};
-		# $returnHash("preferred_state_saturation"} = $tmphash{saturation};
-		# $returnHash("preferred_state_color_temp"} = $tmphash{color_temp};
-		# $returnHash("preferred_state_brightness"} = $tmphash{brightness};
-		# print "\n";
-	# }
-
-	$returnHash{'rssi'} = $returned->{'system'}{'get_sysinfo'}{'rssi'};
-	$returnHash{'active_mode'} = $returned->{'system'}{'get_sysinfo'}{'active_mode'};
-	$returnHash{'heapsize'} = $returned->{'system'}{'get_sysinfo'}{'heapsize'};
-	$returnHash{'err_code'} = $returned->{'system'}{'get_sysinfo'}{'err_code'};
-	return %returnHash;
-}
 
 sub identify{
 	my $ip = shift;
@@ -130,6 +83,59 @@ sub erase_emeter_stats{
 ##
 #Bulb Related commands
 ##
+
+#returns hash of values
+sub get_bulb_sysinfo{
+	my $ip = shift;
+	my %returnHash;
+	my $command = '{"system":{"get_sysinfo":{}}}';
+	my $returned = sendcmd($ip, "$command");
+	$returnHash{'sw_ver'} = $returned->{'system'}{'get_sysinfo'}{'sw_ver'};
+	$returnHash{'hw_ver'} = $returned->{'system'}{'get_sysinfo'}{'hw_ver'};
+	$returnHash{'model'} = $returned->{'system'}{'get_sysinfo'}{'model'};
+	$returnHash{'alias'} = $returned->{'system'}{'get_sysinfo'}{'alias'};
+	$returnHash{'description'} = $returned->{'system'}{'get_sysinfo'}{'description'};
+	$returnHash{'mic_type'} = $returned->{'system'}{'get_sysinfo'}{'mic_type'};
+	$returnHash{'dev_state'} = $returned->{'system'}{'get_sysinfo'}{'dev_state'};
+	$returnHash{'mic_mac'} = $returned->{'system'}{'get_sysinfo'}{'mic_mac'};
+	$returnHash{'deviceId'} = $returned->{'system'}{'get_sysinfo'}{'deviceId'};
+	$returnHash{'oemId'} = $returned->{'system'}{'get_sysinfo'}{'oemId'};
+	$returnHash{'hwId'} = $returned->{'system'}{'get_sysinfo'}{'hwId'};
+	$returnHash{'is_factory'} = $returned->{'system'}{'get_sysinfo'}{'is_factory'};
+	$returnHash{'disco_ver'} = $returned->{'system'}{'get_sysinfo'}{'disco_ver'};
+	$returnHash{'ctrl_protocols_name'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'name'};
+	$returnHash{'ctrl_protocols_version'} = $returned->{'system'}{'get_sysinfo'}{'ctrl_protocols'}{'version'};
+	$returnHash{'light_state_on_off'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'on_off'};
+	$returnHash{'light_state_mode'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'mode'};
+	$returnHash{'light_state_hue'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'hue'};
+	$returnHash{'light_state_saturation'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'saturation'};
+	$returnHash{'light_state_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'color_temp'};
+	$returnHash{'light_state_brightness'} = $returned->{'system'}{'get_sysinfo'}{'light_state'}{'brightness'};
+	$returnHash{'is_dimmable'} = $returned->{'system'}{'get_sysinfo'}{'is_dimmable'};
+	$returnHash{'is_color'} = $returned->{'system'}{'get_sysinfo'}{'is_color'};
+	$returnHash{'is_variable_color_temp'} = $returned->{'system'}{'get_sysinfo'}{'is_variable_color_temp'};
+
+	### Seems like there's a better way to do this... don't care for now
+	# print "preferred_state->\n";
+	# my @prefArr = @{$returned->{'system'}{'get_sysinfo'}{'preferred_state'}};
+	# foreach(@prefArr)
+	# {
+		# my %tmphash = %{$_};
+		# print "\t";
+		# $returnHash("preferred_state_index"} = $tmphash{index};
+		# $returnHash("preferred_state_hue"} = $tmphash{hue};
+		# $returnHash("preferred_state_saturation"} = $tmphash{saturation};
+		# $returnHash("preferred_state_color_temp"} = $tmphash{color_temp};
+		# $returnHash("preferred_state_brightness"} = $tmphash{brightness};
+		# print "\n";
+	# }
+
+	$returnHash{'rssi'} = $returned->{'system'}{'get_sysinfo'}{'rssi'};
+	$returnHash{'active_mode'} = $returned->{'system'}{'get_sysinfo'}{'active_mode'};
+	$returnHash{'heapsize'} = $returned->{'system'}{'get_sysinfo'}{'heapsize'};
+	$returnHash{'err_code'} = $returned->{'system'}{'get_sysinfo'}{'err_code'};
+	return %returnHash;
+}
 
 #1 = on
 #0 = off
@@ -187,7 +193,7 @@ sub get_hsv{
 	my %return;
 	$return{'hue'} = $reply{'hue'};
 	$return{'saturation'} = $reply{'saturation'};
-	$return{'value'} = $reply{'brightness'}* 255 / 100;
+	$return{'value'} = $reply{'brightness'};
 	return %return;
 }
 
@@ -230,11 +236,146 @@ sub set_brightness{
 	return $reply;
 }
 
+sub get_brightness{
+	my $ip = shift;
+	my %reply = get_bulb_state($ip);
+	my $return;
+	$return = $reply{'brightness'};
+	return $return;
+}
+
+
+##
+#Bulb Related commands
+##
+
+sub get_plug_sysinfo{
+	my $ip = shift;
+	my %returnHash;
+	my $command = '{"system":{"get_sysinfo":{}}}';
+	my $returned = sendcmd($ip, "$command");
+	$returnHash{'sw_ver'} = $returned->{'system'}{'get_sysinfo'}{'sw_ver'};
+	$returnHash{'hw_ver'} = $returned->{'system'}{'get_sysinfo'}{'hw_ver'};
+	$returnHash{'type'} = $returned->{'system'}{'get_sysinfo'}{'type'};
+	$returnHash{'model'} = $returned->{'system'}{'get_sysinfo'}{'model'};
+	$returnHash{'mac'} = $returned->{'system'}{'get_sysinfo'}{'mac'};
+	$returnHash{'deviceId'} = $returned->{'system'}{'get_sysinfo'}{'deviceId'};
+	$returnHash{'hwId'} = $returned->{'system'}{'get_sysinfo'}{'hwId'};
+	$returnHash{'fwId'} = $returned->{'system'}{'get_sysinfo'}{'fwId'};
+	$returnHash{'oemId'} = $returned->{'system'}{'get_sysinfo'}{'oemId'};
+	$returnHash{'alias'} = $returned->{'system'}{'get_sysinfo'}{'alias'};
+	$returnHash{'dev_name'} = $returned->{'system'}{'get_sysinfo'}{'dev_name'};
+	$returnHash{'icon_hash'} = $returned->{'system'}{'get_sysinfo'}{'icon_hash'};
+	$returnHash{'relay_state'} = $returned->{'system'}{'get_sysinfo'}{'relay_state'};
+	$returnHash{'on_time'} = $returned->{'system'}{'get_sysinfo'}{'on_time'};
+	$returnHash{'active_mode'} = $returned->{'system'}{'get_sysinfo'}{'active_mode'};
+	$returnHash{'feature'} = $returned->{'system'}{'get_sysinfo'}{'feature'};
+	$returnHash{'updating'} = $returned->{'system'}{'get_sysinfo'}{'updating'};
+	$returnHash{'rssi'} = $returned->{'system'}{'get_sysinfo'}{'rssi'};
+	$returnHash{'led_off'} = $returned->{'system'}{'get_sysinfo'}{'led_off'};
+	$returnHash{'latitude'} = $returned->{'system'}{'get_sysinfo'}{'latitude'};
+	return %returnHash;
+}
+
+#1 = on
+#0 = off
+#command doesnt return status so I'm not
+sub set_plug_state{
+	my $ip = shift;
+	my $status = shift;
+	my $command = '{"system":{"set_relay_state":{"state": ' . $status . '}}}';
+	my $return = sendcmd($ip, "$command");
+}
+
+sub plug_is_off{
+	my $ip = shift;
+	my %replyHash = get_plug_sysinfo($ip);
+	my $return = $replyHash{'relay_state'};
+	if($return){
+	 return 0;
+	}
+	else{
+		return 1;
+	}
+}
+
+sub plug_is_on{
+	my $ip = shift;
+	my %replyHash = get_plug_sysinfo($ip);
+	my $return = $replyHash{'relay_state'};
+	if($return){
+	 return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
+sub turn_plug_on{
+	my $ip = shift;
+	my $command = '{"system":{"set_relay_state":{"state": 1}}}';
+	my $return = sendcmd($ip, "$command");
+}
+sub turn_plug_off{
+	my $ip = shift;
+	my $command = '{"system":{"set_relay_state":{"state": 0}}}';
+	my $return = sendcmd($ip, "$command");
+}
+
+sub plug_has_emeter{
+	my $ip = shift;
+	my %replyHash = get_plug_sysinfo($ip);
+	my $return = $replyHash{'feature'};
+	if($return =~ /ENE/){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
+sub get_plug_led{
+	my $ip = shift;
+	my %replyHash = get_plug_sysinfo($ip);
+	my $return = $replyHash{'led_off'};
+	if($return){
+		return 0;
+	}
+	else{
+		return 1;
+	}
+}
+
+sub set_plug_led{
+	my $ip = shift;
+	my $status = shift;
+	if($status){
+		$status = 0;
+	}
+	else{
+		$status = 1;
+	}
+	
+	my $command = '{"system":{"set_led_off":{"off": ' . $status . '}}}';
+	my $return = sendcmd($ip, "$command");
+}
+
+#returns datetime
+sub plug_on_since{
+	my $ip = shift;
+	my %replyHash = get_plug_sysinfo($ip);
+	my $return = $replyHash{'on_time'};
+	my $dt = DateTime->now();
+	$dt->subtract(seconds=>$return);
+	return $dt;
+}
 
 
 
 
-
+#
+#Communication subs
+#
 
 #returns decoded json
 sub sendcmd{
@@ -291,11 +432,50 @@ sub decrypt{
 
 sub printBulbInfo{
 	my $ip = shift;
-	my %returnHash = get_sysinfo($ip);
+	my %returnHash = get_bulb_sysinfo($ip);
 	foreach (sort keys %returnHash) {
 		print "$_ : $returnHash{$_}\n";
 	}
 
+}
+
+sub executeAllPlugCommandsTest{
+	my $ip = shift;
+	my $return;
+	
+	get_plug_sysinfo($ip);
+	
+	set_plug_state($ip,0);
+	$return = plug_is_off($ip);
+	print "Plug is off? $return\n";
+	sleep(1);
+	set_plug_state($ip,1);
+	$return = plug_is_on($ip);
+	print "Plug is on? $return\n";
+	sleep(1);
+	set_plug_state($ip,0);
+	sleep(1);
+	
+	turn_plug_on($ip);
+	turn_plug_off($ip);
+	
+	$return = plug_has_emeter($ip);
+	print "Has emeter: $return\n";
+	
+	
+	set_plug_led($ip,0);
+	$return = get_plug_led($ip);
+	print "Plug led: $return\n";
+	sleep(1);
+	set_plug_led($ip,1);
+	$return = get_plug_led($ip);
+	print "Plug led: $return\n";
+	sleep(1);
+	
+	$return = plug_on_since($ip);
+	print "On since: $return\n";
+	
+	
 }
 
 sub executeAllBulbCommandsTest{
@@ -356,6 +536,9 @@ sub executeAllBulbCommandsTest{
 	print "HSV-----\n";
 	print "\n";
 	
+	$return = get_color_temp($ip);
+	print "Color temp: $return";
+	
 	%returnHash = set_hsv($ip, 240, 100, 100);
 	print "New HSV-----\n";
 	foreach (sort keys %returnHash) {
@@ -364,10 +547,6 @@ sub executeAllBulbCommandsTest{
 	print "New HSV-----\n";
 	print "\n";
 
-	$return = get_color_temp($ip);
-	print "Color temp: $return";
-	
-	
 	set_bulb_red($ip);
 	sleep(1);
 	set_bulb_green($ip);
@@ -382,6 +561,10 @@ sub executeAllBulbCommandsTest{
 	sleep(1);
 	set_brightness($ip, 100);
 	sleep(1);
+	
+	
+	$return = get_brightness($ip);
+	print "Brightness: $return\n";
 
 }
 
