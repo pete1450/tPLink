@@ -28,9 +28,9 @@ Turns the plug off and should return new state(doesn't... bug)
 
 ##Available commands
 All commands require the ip to be sent. Anything else is noted.
-*identify
-***set_alias** returns new alias
- *alias
+* identify
+* **set_alias** returns new alias
+ * alias
 *
 *
 *
