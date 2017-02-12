@@ -89,12 +89,12 @@ if($params{'cmd'} =~ /^get_hsv$/){
 		print "$_:$returnHash{$_}\n";
 	}
 }
-if($params{'cmd'} =~ /^set_white_temp$/){
+if($params{'cmd'} =~ /^set_hsv$/){
 	my $ip = $params{'ip'};
 	my $hue = $params{'hue'};
 	my $sat = $params{'sat'};
 	my $val = $params{'val'};
-	my %returnHash = set_white_temp($ip, $hue, $sat, $val);
+	my %returnHash = set_hsv($ip, $hue, $sat, $val);
 	foreach (sort keys %returnHash) {
 		print "$_:$returnHash{$_}\n";
 	}
@@ -136,11 +136,6 @@ if($params{'cmd'} =~ /^set_plug_state$/){
 	my $ip = $params{'ip'};
 	my $state = $params{'state'};
 	my $return = set_plug_state($ip, $state);
-	print $return;
-}
-if($params{'cmd'} =~ /^get_brightness$/){
-	my $ip = $params{'ip'};
-	my $return = get_brightness($ip);
 	print $return;
 }
 if($params{'cmd'} =~ /^plug_is_off$/){
