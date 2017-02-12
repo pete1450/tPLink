@@ -1,9 +1,9 @@
 #tPLink
 Interacting with TPlink home automation products via perl
 
-I haven't taken the time to fiddle with(learn) python but the only examples of controlling TP-Link products are written in it. This is my messy implementation in perl. Will be implementing the full set of commands but starting this reporitory with what I got working in one night.
+I haven't taken the time to fiddle with(learn) python but the only examples of controlling TP-Link products are written in it. This is my implementation in a perl module and cgi script so you can make web requests from any home automation device or webpage you want.
 
-This code currently works with the LB100 and LB130 bulbs. HS100 switch commands are in there and will be implemented shortly.
+This code currently works with the LB100 and LB130 bulbs as well as the HS100 switch
 
 Based on and many thanks to:  
 [softScheck](https://github.com/softScheck/tplink-smartplug)  
