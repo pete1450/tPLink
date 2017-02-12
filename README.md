@@ -1,7 +1,7 @@
 #tPLink
 Interacting with TPlink home automation products via perl
 
-I haven't taken the time to fiddle with(learn) python but the only examples of controlling TP-Link products are written in it. This is my implementation in a perl module and cgi script so you can make web requests from any home automation device or webpage you want.
+I got annoyed that I couldn't tie all the tp-link bulbs and plugs into my home automation so I decided to do something about it. I wrote a perl module that I threw on my pi3 which does the socket communication directly to the devices; no TP-link middleman. Then there is a cgi script so you can make web requests from any home automation device or webpage you want.
 
 This code currently works with the LB100 and LB130 bulbs as well as the HS100 switch
 
