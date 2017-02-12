@@ -10,8 +10,8 @@ Based on and many thanks to:
 [GadgetReactor](https://github.com/GadgetReactor/pyHS100)
 
 ##Install
-*Place the contents of the lib dir in your perl lib location. For instance mine is /usr/local/share/perl/5.20.2. I included JSON because I had to install it. If you already have it just ignore it.
-*Place the perl script in a cgi dir that is set up to run perl scripts
+* Place the contents of the lib dir in your perl lib location. For instance mine is /usr/local/share/perl/5.20.2. I included JSON because I had to install it. If you already have it just ignore it.
+* Place the perl script in a cgi dir that is set up to run perl scripts
 
 ##Usage
 Call the script with a command name, ip address of your device, and any relevent data for setters.  
