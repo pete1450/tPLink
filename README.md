@@ -1,5 +1,5 @@
 #tPLink
-Interacting with TPlink home automation products via perl
+Interacting with TPlink home automation products via local web requests.
 
 I got annoyed that I couldn't tie all the tp-link bulbs and plugs into my home automation so I decided to do something about it. I wrote a perl module that I threw on my pi3 which does the socket communication directly to the devices; no TP-link middleman. Then there is a cgi script so you can make web requests from any home automation device or webpage you want.
 
