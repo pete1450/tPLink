@@ -70,6 +70,8 @@ All commands require the ip to be sent. Anything else is required is a subitem.
 ##TODO
 *Add discovery
 *Use discovery to allow commands by device name instead of ip
+*error checking and response(-1?)
+
 
 
 
