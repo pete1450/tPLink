@@ -383,16 +383,17 @@ sub plug_on_since{
 
 sub discover{
 	my $socket = new IO::Socket::INET (
-		PeerHost => '255.255.255.255',
+		PeerAddr => '255.255.255.255',
 		PeerPort => '9999',
 		Proto => 'udp',
+		LocalAddr => 'localhost',
+		Broadcast => 1
 	) or die "ERROR in Socket Creation : $!\n";
 	#IO::Socket::Timeout->enable_timeouts_on($socket);
-	$socket->sockopt(SOL_SOCKET, 1) or die "setsockopt: $!";
 	$socket->sockopt(SO_REUSEADDR, 1) or die "setsockopt: $!";
     $socket->sockopt(SO_BROADCAST, 1) or die "setsockopt: $!"; 
 	#$socket->settimeout(5);
-	$socket->send(encrypt('{"system": {"get_sysinfo": None}')) or die $!;
+	$socket->send(encrypt('{"system":{"get_sysinfo":{}}}')) or die $!;
 	my @replyArr;
 	
 	my $newmsg;
