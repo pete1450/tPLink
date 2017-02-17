@@ -1,6 +1,8 @@
 package My::TPLCmd;
 use strict;
-use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+#use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+use IO::Socket::Timeout;
+use IO::Socket::INET;
 use bytes;
 use JSON qw( decode_json );
 use DateTime;
@@ -8,7 +10,7 @@ use Exporter;
 
 our @ISA= qw( Exporter );
 
-our @EXPORT = qw( identify set_alias get_emeter_realtime get_emeter_daily get_emeter_monthly erase_emeter_stats get_bulb_sysinfo set_bulb_state get_bulb_state set_white_temp get_color_temp get_hsv set_hsv set_bulb_red set_bulb_green set_bulb_blue set_brightness get_brightness get_plug_sysinfo set_plug_state plug_is_off plug_is_on turn_plug_on turn_plug_off plug_has_emeter get_plug_led set_plug_led plug_on_since);
+our @EXPORT = qw( identify set_alias get_emeter_realtime get_emeter_daily get_emeter_monthly erase_emeter_stats get_bulb_sysinfo set_bulb_state get_bulb_state set_white_temp get_color_temp get_hsv set_hsv set_bulb_red set_bulb_green set_bulb_blue set_brightness get_brightness get_plug_sysinfo set_plug_state plug_is_off plug_is_on turn_plug_on turn_plug_off plug_has_emeter get_plug_led set_plug_led plug_on_since discover);
 our @EXPORT_OK = qw( executeAllPlugCommandsTest executeAllBulbCommandsTest sendcmd encrypt decrypt );
 
 my $reply;
@@ -31,6 +33,8 @@ my $debug = 0;
 ##
 #General commands
 ##
+
+
 
 
 sub identify{
@@ -377,21 +381,47 @@ sub plug_on_since{
 #Communication subs
 #
 
+sub discover{
+	my $socket = new IO::Socket::INET (
+		PeerHost => '255.255.255.255',
+		PeerPort => '9999',
+		Proto => 'udp',
+	) or die "ERROR in Socket Creation : $!\n";
+	#IO::Socket::Timeout->enable_timeouts_on($socket);
+	$socket->sockopt(SOL_SOCKET, 1) or die "setsockopt: $!";
+	$socket->sockopt(SO_REUSEADDR, 1) or die "setsockopt: $!";
+    $socket->sockopt(SO_BROADCAST, 1) or die "setsockopt: $!"; 
+	#$socket->settimeout(5);
+	$socket->send(encrypt('{"system": {"get_sysinfo": None}')) or die $!;
+	my @replyArr;
+	
+	my $newmsg;
+	print "test1\n";
+	while ($socket->recv($newmsg, 4096)) {
+		my($port, $ipaddr) = sockaddr_in($socket->peername);
+		#$hishost = gethostbyaddr($ipaddr, AF_INET);
+		print "Client $ipaddr\n";
+		#$sock->send("CONFIRMED: $newmsg ");
+	} 
+	print "test2\n";
+
+}
+
 #returns decoded json
 sub sendcmd{
 	my $ip = shift;
 	my $command = shift;
-	my $port = 9999;
-	my $paddr = pack_sockaddr_in($port, inet_aton($ip));
-	my $msg;
+	
+	my $socket = new IO::Socket::INET (
+		PeerHost => $ip,
+		PeerPort => '9999',
+		Proto => 'tcp',
+	) or die "ERROR in Socket Creation : $!\n";
 
-	my $proto = getprotobyname('tcp');
-	socket(my $socket, PF_INET, SOCK_STREAM, $proto) or die "socket: $!";
-	connect($socket, $paddr) or die "connect: $!";
-	send($socket, encrypt($command),$proto) or die $!;
+	$socket->send(encrypt($command)) or die $!;
 	my $data;
-	recv($socket, $data, 4096, $proto);
-	close($socket); 
+	$data = <$socket> or die $!;
+	$socket->close();
 
 	print "Sent: $command\n" if $debug;
 	my $received = substr(decrypt($data), 4);

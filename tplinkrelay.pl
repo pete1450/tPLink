@@ -60,7 +60,7 @@ if($params{'cmd'} =~ /^get_bulb_sysinfo$/){
 }
 if($params{'cmd'} =~ /^set_bulb_state$/){
 	my $ip = $params{'ip'};
-	my $status = $params{'status'};
+	my $status = $params{'state'};
 	my $return = set_bulb_state($ip, $status);
 	print $return;
 }
@@ -177,6 +177,10 @@ if($params{'cmd'} =~ /^set_plug_led$/){
 if($params{'cmd'} =~ /^plug_on_since$/){
 	my $ip = $params{'ip'};
 	my $return = plug_on_since($ip);
+	print $return;
+}
+if($params{'cmd'} =~ /^discover$/){
+	my $return = discover();
 	print $return;
 }
 
