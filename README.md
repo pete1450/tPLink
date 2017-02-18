@@ -27,8 +27,9 @@ http://mywebserver.com/tplinkrelay.pl?cmd=set_plug_state&ip=192.168.1.165&state=
 Turns the plug off and should return new state(doesn't... bug)
 
 ##Available commands
-All commands require the ip to be sent. Anything else is required is a subitem.
+All commands require the ip to be sent unless noted. Anything else is required is a subitem.
 * **identify**
+* **list_devices** returns newline separated ip,alias pairs that were discovered
 * **set_alias** returns new alias
  * alias
 * **get_emeter_realtime**
@@ -56,6 +57,8 @@ All commands require the ip to be sent. Anything else is required is a subitem.
 * **get_plug_sysinfo** Returns all plug info
 * **set_plug_state**
  * state (1 for on, 0 for off)
+* **set_state_by_name** no ip needed. returns -1 if name not found
+ * name 
 * **plug_is_off** Returns 1 for true, 0 for false
 * **plug_is_on** Returns 0 for true, 1 for false
 * **turn_plug_on** Returns 1 for new status

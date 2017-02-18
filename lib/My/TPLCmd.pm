@@ -1,6 +1,8 @@
 package My::TPLCmd;
 use strict;
-use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+#use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+use IO::Socket::Timeout;
+use IO::Socket::INET;
 use bytes;
 use JSON qw( decode_json );
 use DateTime;
@@ -8,19 +10,19 @@ use Exporter;
 
 our @ISA= qw( Exporter );
 
-our @EXPORT = qw( identify set_alias get_emeter_realtime get_emeter_daily get_emeter_monthly erase_emeter_stats get_bulb_sysinfo set_bulb_state get_bulb_state set_white_temp get_color_temp get_hsv set_hsv set_bulb_red set_bulb_green set_bulb_blue set_brightness get_brightness get_plug_sysinfo set_plug_state plug_is_off plug_is_on turn_plug_on turn_plug_off plug_has_emeter get_plug_led set_plug_led plug_on_since);
-our @EXPORT_OK = qw( executeAllPlugCommandsTest executeAllBulbCommandsTest sendcmd encrypt decrypt );
+our @EXPORT = qw( identify set_alias get_emeter_realtime get_emeter_daily get_emeter_monthly erase_emeter_stats get_bulb_sysinfo set_bulb_state get_bulb_state set_white_temp get_color_temp get_hsv set_hsv set_bulb_red set_bulb_green set_bulb_blue set_brightness get_brightness get_plug_sysinfo set_plug_state plug_is_off plug_is_on turn_plug_on turn_plug_off plug_has_emeter get_plug_led set_plug_led plug_on_since set_state_by_name list_devices);
+our @EXPORT_OK = qw( executeAllPlugCommandsTest executeAllBulbCommandsTest sendcmd encrypt decrypt discover);
 
 my $reply;
 my $debug = 0;
 
-#my $plugip = '192.168.1.165';
-#my $ip = '192.168.1.129';
-#my $bulbip = '192.168.1.194';
 #executeAllPlugCommandsTest($plugip);
 #executeAllBulbCommandsTest($bulbip);
 
-
+my %modeltypes = (
+	"HS110(US)"  => "plug",
+	"LB130(US)" => "bulb"
+);
 
 ###
 #
@@ -31,6 +33,7 @@ my $debug = 0;
 ##
 #General commands
 ##
+
 
 
 sub identify{
@@ -78,6 +81,62 @@ sub erase_emeter_stats{
 	my $ip = shift;
 	my $command = '{"smartlife.iot.common.emeter":{"erase_emeter_stat":{}}}';
 	my $return = sendcmd($ip, "$command");
+	return $return;
+}
+
+#returns new state, otherwise -1 if the name cant be found
+sub set_state_by_name{
+	my $name = shift;
+	my $state = shift;
+	my $ip;
+	my $json;
+	my $model;
+	my $found = 0;
+	
+	my %device = discover();
+	
+	#find name in json
+	foreach (sort keys %device) {
+		$ip = $_;
+		$json = $device{$ip};
+		my $alias = $json->{'system'}{'get_sysinfo'}{'alias'};
+		if($name =~ /^$alias$/i){
+			$found = 1;
+			last;
+		}
+	}
+	if($found == 0){
+		return -1;
+	}
+
+	#need to figure out what type of device this is so we can send the right command
+	#going with a hash of model names for now because while there is a "type" on plugs, it is "mic_type" on bulbs
+	$model = $json->{'system'}{'get_sysinfo'}{'model'};
+	if($modeltypes{$model} =~ /bulb/){
+		my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $state . '}}}';
+		my $return = sendcmd($ip, "$command");
+		my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'};
+		return $reply;
+	}
+	elsif($modeltypes{$model} =~ /plug/){
+		my $command = '{"system":{"set_relay_state":{"state": ' . $state . '}}}';
+		my $return = sendcmd($ip, "$command");
+	}
+	print "done\n";
+}
+
+#
+sub list_devices{
+	my %device = discover();
+	my $return = "";
+	
+	#find name in json
+	foreach (sort keys %device) {
+		my $ip = $_;
+		my $json = $device{$ip};
+		my $alias = $json->{'system'}{'get_sysinfo'}{'alias'};
+		$return .= "$ip,$alias\n";
+	}
 	return $return;
 }
 
@@ -377,21 +436,46 @@ sub plug_on_since{
 #Communication subs
 #
 
+#returns hash of decoded json with ip as key
+sub discover{
+
+	my $sock = IO::Socket::INET->new(Proto=>'udp') or die $@;
+	$sock->sockopt(SO_BROADCAST() => 1);
+	my $dest = sockaddr_in(9999, inet_aton('255.255.255.255'));
+	IO::Socket::Timeout->enable_timeouts_on($sock);
+	$sock->read_timeout(1);
+	$sock->send(substr(encrypt('{"system":{"get_sysinfo":{}}}'),4),0,$dest) or die "send() failed: $!";
+
+	my $newmsg;
+	my %device;
+	
+	while($sock->recv($newmsg,4096)){
+		my $received = decrypt($newmsg);
+		my $peer_address = $sock->peerhost();
+		my $decoded = decode_json($received);
+		$device{$peer_address} = $decoded; #put decoded json in hash with ip as key
+	}
+	$sock->close();
+	
+	return %device;
+}
+
 #returns decoded json
 sub sendcmd{
 	my $ip = shift;
 	my $command = shift;
-	my $port = 9999;
-	my $paddr = pack_sockaddr_in($port, inet_aton($ip));
-	my $msg;
-
-	my $proto = getprotobyname('tcp');
-	socket(my $socket, PF_INET, SOCK_STREAM, $proto) or die "socket: $!";
-	connect($socket, $paddr) or die "connect: $!";
-	send($socket, encrypt($command),$proto) or die $!;
+	
+	my $socket = new IO::Socket::INET (
+		PeerHost => $ip,
+		PeerPort => '9999',
+		Proto => 'tcp',
+	) or die "ERROR in Socket Creation : $!\n";
+	IO::Socket::Timeout->enable_timeouts_on($socket);
+	$socket->read_timeout(.5);
+	$socket->send(encrypt($command)) or die $!;
 	my $data;
-	recv($socket, $data, 4096, $proto);
-	close($socket); 
+	$data = <$socket> or die $!;
+	$socket->close();
 
 	print "Sent: $command\n" if $debug;
 	my $received = substr(decrypt($data), 4);
