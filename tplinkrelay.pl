@@ -18,6 +18,18 @@ my %params;
 #		print "$_: $params{$_}\n";
 #}
 
+if($params{'cmd'} =~ /^list_devices$/){
+	my $return = list_devices();
+	print $return;
+}
+
+if($params{'cmd'} =~ /^set_state_by_name$/){
+	my $name = $params{'name'};
+	my $state = $params{'state'};
+	my $return = set_state_by_name($name, $state);
+	print $return;
+}
+
 if($params{'cmd'} =~ /^identify$/){
 	my $ip = $params{'ip'};
 	my %returnHash = identify($ip);
