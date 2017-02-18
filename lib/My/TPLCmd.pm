@@ -382,29 +382,23 @@ sub plug_on_since{
 #
 
 sub discover{
-	my $socket = new IO::Socket::INET (
-		PeerAddr => '255.255.255.255',
-		PeerPort => '9999',
-		Proto => 'udp',
-		LocalAddr => 'localhost',
-		Broadcast => 1
-	) or die "ERROR in Socket Creation : $!\n";
-	#IO::Socket::Timeout->enable_timeouts_on($socket);
-	$socket->sockopt(SO_REUSEADDR, 1) or die "setsockopt: $!";
-    $socket->sockopt(SO_BROADCAST, 1) or die "setsockopt: $!"; 
-	#$socket->settimeout(5);
-	$socket->send(encrypt('{"system":{"get_sysinfo":{}}}')) or die $!;
-	my @replyArr;
-	
+
+	my $sock = IO::Socket::INET->new(Proto=>'udp') or die $@;
+	$sock->sockopt(SO_BROADCAST() => 1);
+	my $dest = sockaddr_in(9999, inet_aton('255.255.255.255'));
+	IO::Socket::Timeout->enable_timeouts_on($sock);
+	$sock->read_timeout(1);
+	$sock->send(substr(encrypt('{"system":{"get_sysinfo":{}}}'),4),0,$dest) or die "send() failed: $!";
+
 	my $newmsg;
-	print "test1\n";
-	while ($socket->recv($newmsg, 4096)) {
-		my($port, $ipaddr) = sockaddr_in($socket->peername);
-		#$hishost = gethostbyaddr($ipaddr, AF_INET);
-		print "Client $ipaddr\n";
-		#$sock->send("CONFIRMED: $newmsg ");
-	} 
-	print "test2\n";
+	while($sock->recv($newmsg,4096)){
+		# read operation on the socket
+		my $received = decrypt($newmsg);
+		my $peer_address = $sock->peerhost();
+		my $peer_port = $sock->peerport();
+		print "\n($peer_address , $peer_port) said : $received\n";
+	}
+	$sock->close();
 
 }
 
