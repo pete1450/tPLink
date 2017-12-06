@@ -216,7 +216,6 @@ sub set_bulb_state{
          $extraparams = $extraparams . ',"transition_period":' . $transition;
         }
 	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $status . $extraparams . '}}}';
-        print $command . "\n";
 	my $return = sendcmd($ip, "$command");
 	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'};
 	return $reply;
