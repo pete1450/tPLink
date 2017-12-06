@@ -204,7 +204,19 @@ sub get_bulb_sysinfo{
 sub set_bulb_state{
 	my $ip = shift;
 	my $status = shift;
-	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $status . '}}}';
+	my $brightness = shift;
+	my $transition = shift;
+        my $extraparams = '';
+        if(defined($brightness))
+        {
+         $extraparams = $extraparams . ',"ignore_default":1,"brightness":' . $brightness;
+        }
+        if(defined($transition))
+        {
+         $extraparams = $extraparams . ',"transition_period":' . $transition;
+        }
+	my $command = '{"smartlife.iot.smartbulb.lightingservice":{"transition_light_state":{"on_off":' . $status . $extraparams . '}}}';
+        print $command . "\n";
 	my $return = sendcmd($ip, "$command");
 	my $reply = $return->{'smartlife.iot.smartbulb.lightingservice'}{'transition_light_state'}{'on_off'};
 	return $reply;
